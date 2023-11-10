@@ -1,16 +1,19 @@
 const express = require("express");
+const { postUserSchema, putUserSchema } = require("./userValidation");
+const validation = require("./validations");
 const router = express.Router();
+require("dotenv").config();
 const pg = require("pg");
 
 const pool = new pg.Pool({
-  host: "localhost",
-  port: 5432,
-  user: "postgres",
-  password: "4849",
-  database: "postgres",
+  host: process.env.PG_HOST,
+  port: process.env.PG_PORT,
+  user: process.env.PG_USER,
+  password: process.env.PG_PASSWORD,
+  database: process.env.PG_DATABASE,
 });
 
-router.post("/", async (req, res) => {
+router.post("/", validation(postUserSchema), async (req, res) => {
   const { title, description, done } = req.body;
   const query =
     "INSERT INTO todos (title, description, done) VALUES ($1, $2, $3) RETURNING *";
@@ -35,33 +38,34 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", validation(putUserSchema), async (req, res) => {
   const id = req.params.id;
   const { title, description, done } = req.body;
-  const query =
-    "UPDATE todos SET title = $1, description = $2, done = $3 WHERE id = $4 RETURNING *";
-  const values = [title, description, done, id];
-
-  try {
-    const result = await pool.query(query, values);
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Server Error");
+  const query = "SELECT * FROM todos WHERE id = $1";
+  const values = [id];
+  const result = await pool.query(query, values);
+  if (result.rows.length === 0) {
+    return res.status(404).send("Todo not found");
   }
+  const updateQuery =
+    "UPDATE todos SET title = $1, description = $2, done = $3 WHERE id = $4 RETURNING *";
+  const updateValues = [title, description, done, id];
+  const updatedTodo = await pool.query(updateQuery, updateValues);
+  res.json(updatedTodo.rows[0]);
 });
 
 router.delete("/:id", async (req, res) => {
   const id = req.params.id;
-  const query = "DELETE FROM todos WHERE id = $1";
+  const query = "SELECT * FROM todos WHERE id = $1";
+  const values = [id];
+  const result = await pool.query(query, values);
 
-  try {
-    await pool.query(query, [id]);
-    res.json({ message: "Todo deleted" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Server Error");
+  if (result.rows.length === 0) {
+    return res.status(404).send("Todo not found");
   }
+  const deleteQuery = "DELETE FROM todos WHERE id = $1";
+  await pool.query(deleteQuery, [id]);
+  res.json({ message: "Todo deleted" });
 });
 
 module.exports = router;

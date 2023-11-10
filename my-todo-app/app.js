@@ -23,16 +23,6 @@ app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/todos", todoRouter);
 
-const pool = new pg.Pool({
-  host: "localhost",
-  port: 5432,
-  user: "ravi",
-  password: "1234",
-  database: "todos",
-});
-
-app.set("pool", pool);
-
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

@@ -1,0 +1,20 @@
+# Ignore compiled binaries
+*.exe
+*.o
+*.class
+*.pyc
+
+# Ignore generated files
+node_modules/
+vendor/
+build/
+dist/
+
+# Ignore system-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore sensitive files
+.env
+.config
+*.key
