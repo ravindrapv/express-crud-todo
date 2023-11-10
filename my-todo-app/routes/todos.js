@@ -1,27 +1,47 @@
 const express = require("express");
+const { DataTypes } = require("sequelize");
 const { postUserSchema, putUserSchema } = require("./userValidation");
 const validation = require("./validations");
 const router = express.Router();
-require("dotenv").config();
-const pg = require("pg");
+const { Sequelize } = require("sequelize");
 
-const pool = new pg.Pool({
+require("dotenv").config();
+
+const sequelize = new Sequelize({
   host: process.env.PG_HOST,
   port: process.env.PG_PORT,
-  user: process.env.PG_USER,
+  username: process.env.PG_USER,
   password: process.env.PG_PASSWORD,
   database: process.env.PG_DATABASE,
+  dialect: "postgres",
 });
 
-router.post("/", validation(postUserSchema), async (req, res) => {
-  const { title, description, done } = req.body;
-  const query =
-    "INSERT INTO todos (title, description, done) VALUES ($1, $2, $3) RETURNING *";
-  const values = [title, description, done];
+const Todo = sequelize.define(
+  "Todo",
+  {
+    title: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    done: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+  },
+  {
+    tableName: "todos",
+  }
+);
 
+router.post("/", validation(postUserSchema), async (req, res) => {
   try {
-    const result = await pool.query(query, values);
-    res.json(result.rows[0]);
+    const todo = await Todo.create(req.body);
+    res.json(todo);
   } catch (error) {
     console.error(error);
     res.status(500).send("Server Error");
@@ -30,8 +50,8 @@ router.post("/", validation(postUserSchema), async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM todos");
-    res.json(result.rows);
+    const todos = await Todo.findAll();
+    res.json(todos);
   } catch (error) {
     console.error(error);
     res.status(500).send("Server Error");
@@ -40,32 +60,34 @@ router.get("/", async (req, res) => {
 
 router.put("/:id", validation(putUserSchema), async (req, res) => {
   const id = req.params.id;
-  const { title, description, done } = req.body;
-  const query = "SELECT * FROM todos WHERE id = $1";
-  const values = [id];
-  const result = await pool.query(query, values);
-  if (result.rows.length === 0) {
-    return res.status(404).send("Todo not found");
+  try {
+    const todo = await Todo.findByPk(id);
+    if (!todo) {
+      return res.status(404).send("Todo not found");
+    }
+
+    await todo.update(req.body);
+    res.json(todo);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
   }
-  const updateQuery =
-    "UPDATE todos SET title = $1, description = $2, done = $3 WHERE id = $4 RETURNING *";
-  const updateValues = [title, description, done, id];
-  const updatedTodo = await pool.query(updateQuery, updateValues);
-  res.json(updatedTodo.rows[0]);
 });
 
 router.delete("/:id", async (req, res) => {
   const id = req.params.id;
-  const query = "SELECT * FROM todos WHERE id = $1";
-  const values = [id];
-  const result = await pool.query(query, values);
+  try {
+    const todo = await Todo.findByPk(id);
+    if (!todo) {
+      return res.status(404).send("Todo not found");
+    }
 
-  if (result.rows.length === 0) {
-    return res.status(404).send("Todo not found");
+    await todo.destroy();
+    res.json({ message: "Todo deleted" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
   }
-  const deleteQuery = "DELETE FROM todos WHERE id = $1";
-  await pool.query(deleteQuery, [id]);
-  res.json({ message: "Todo deleted" });
 });
 
 module.exports = router;

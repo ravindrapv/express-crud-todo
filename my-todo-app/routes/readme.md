@@ -8,7 +8,7 @@ A Todo application with CRUD operations using Node.js, Express, Sequelize (SQL O
 - **Read:** View the list of existing tasks.
 - **Update:** Modify task details or mark them as completed.
 - **Delete:** Remove tasks from the todo list.
-- **Validation:** Input validation using Yup..
+- **Validation:** Input validation using Yup.
 
 ## Technologies
 
