@@ -9,7 +9,7 @@ A Todo application with CRUD operations using Node.js, Express, Sequelize (SQL O
 - **Update:** Modify task details or mark them as completed.
 - **Delete:** Remove tasks from the todo list.
 - **Validation:** Input validation using Yup.
-- **OMR Integration:** Optical Mark Recognition for additional functionality (replace with your OMR details).
+.
 
 ## Technologies
 
